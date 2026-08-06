@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PicklePal — Interactive Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F7FBF2;
+    --cream-deep:#E3EEDA;
+    --card:#FFFFFF;
+    --ink:#12291F;
+    --ink-soft:#2F7057;
+    --lime:#A8DC3C;
+    --lime-soft:#EBF7D2;
+    --lime-dark:#6FAE1F;
+    --deep:#175243;
+    --coral:#FF7A65;
+    --coral-soft:#FFE9E3;
+    --blue:#57A8E8;
+    --blue-soft:#E1F1FC;
+    --lav:#A794D8;
+    --lav-soft:#EFEAF9;
+    --sun:#FFC93D;
+    --sun-soft:#FFF3D2;
+    --teal:#1FA08C;
+    --shadow:0 2px 10px rgba(18,41,31,.05);
+    --radius:24px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Nunito',ui-rounded,'SF Pro Rounded',system-ui,sans-serif;
+    background:linear-gradient(135deg,#DCF4C6 0%,#F2FBEA 42%,#D8F1F4 100%);
+    color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px;gap:40px;
+  }
+  .side-note{max-width:270px;background:#fff;border-radius:28px;padding:26px;box-shadow:0 16px 40px rgba(34,69,58,.12)}
+  .side-note h1{font-size:26px;font-weight:900;letter-spacing:-.5px;color:var(--deep)}
+  .side-note h1 .pal{color:var(--lime-dark)}
+  .side-note p{margin-top:10px;font-size:14px;line-height:1.55;color:var(--ink);font-weight:600}
+  .side-note .kbd{display:inline-block;background:var(--lav-soft);color:#6C4FB8;border-radius:8px;padding:1px 9px;font-size:12px;font-weight:800}
+  .phone{
+    position:relative;width:392px;height:846px;flex:none;
+    background:var(--cream);border-radius:48px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(34,69,58,.28),0 0 0 10px #23302B,0 0 0 12px #3d4f47;
+  }
+  @media (max-width:860px){.side-note{display:none}}
+  @media (max-width:440px){
+    body{padding:0}
+    .phone{width:100vw;height:100dvh;border-radius:0;box-shadow:none}
+  }
+  .statusbar{
+    position:absolute;top:0;left:0;right:0;height:44px;z-index:40;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 26px;font-size:13px;font-weight:800;color:var(--ink);pointer-events:none;
+  }
+  /* ---------- screens ---------- */
+  .screen{
+    position:absolute;inset:0;display:none;flex-direction:column;
+    padding:56px 22px 100px;overflow-y:auto;scrollbar-width:none;
+  }
+  .screen::-webkit-scrollbar{display:none}
+  .screen > *{flex-shrink:0}
+  .screen.active{display:flex;animation:screenIn .32s ease both}
+  .screen.no-tabs{padding-bottom:32px}
+  @keyframes screenIn{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+  .screen.back-anim{animation:screenBack .32s ease both}
+  @keyframes screenBack{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+
+  /* ---------- shared components ---------- */
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;min-height:40px}
+  .back-btn{
+    width:40px;height:40px;border-radius:14px;border:2px solid var(--cream-deep);
+    background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;
+    font-size:18px;color:var(--ink);flex:none;transition:transform .15s;
+  }
+  .back-btn:active{transform:scale(.92)}
+  .topbar .title{font-size:17px;font-weight:900}
+  .progress-dots{display:flex;gap:6px;margin-left:auto}
+  .progress-dots i{width:8px;height:8px;border-radius:99px;background:var(--cream-deep);transition:.25s}
+  .progress-dots i.on{background:var(--lime);width:22px}
+
+  h2.q{font-size:30px;font-weight:900;line-height:1.12;letter-spacing:-.8px;margin:6px 0 8px}
+  p.sub{font-size:15px;color:var(--ink-soft);font-weight:700;line-height:1.5;margin-bottom:18px}
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    padding:17px;border-radius:99px;border:none;cursor:pointer;
+    font-family:inherit;font-size:16.5px;font-weight:900;letter-spacing:.2px;
+    transition:transform .12s,filter .15s;
+  }
+  .btn:active{transform:translateY(3px) scale(.99)}
+  .btn.primary{background:var(--lime);color:var(--deep);box-shadow:0 5px 0 var(--lime-dark)}
+  .btn.primary:active{box-shadow:0 1px 0 var(--lime-dark)}
+  .btn.primary:disabled{filter:grayscale(.55) opacity(.6);cursor:not-allowed;transform:none}
+  .btn.ghost{background:#fff;color:var(--ink);border:2.5px solid var(--cream-deep);box-shadow:0 4px 0 var(--cream-deep)}
+  .btn.coral{background:var(--coral);color:#fff;box-shadow:0 5px 0 #E2543F}
+  .btn-row{display:flex;flex-direction:column;gap:10px;margin-top:auto;padding-top:18px}
+
+  .opt{
+    display:flex;align-items:center;gap:14px;background:#fff;border:2px solid var(--cream-deep);
+    border-radius:20px;padding:15px 16px;margin-bottom:11px;cursor:pointer;
+    transition:border-color .15s,background .15s,transform .12s;
+  }
+  .opt:active{transform:scale(.985)}
+  .opt .ico{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+  .opt .txt b{display:block;font-size:15.5px;font-weight:800}
+  .opt .txt span{font-size:13px;color:var(--ink-soft)}
+  .opt.sel{border-color:var(--lime-dark);background:var(--lime-soft)}
+  .opt .tick{margin-left:auto;width:24px;height:24px;border-radius:99px;border:2.5px solid var(--cream-deep);flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:900}
+  .opt.sel .tick{background:var(--lime-dark);border-color:var(--lime-dark)}
+  .opt.sel .tick::after{content:'✓'}
+
+  .chips{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:18px}
+  .chip{
+    padding:10px 15px;border-radius:99px;background:#fff;border:2px solid var(--cream-deep);
+    font-size:13.5px;font-weight:800;cursor:pointer;transition:.15s;color:var(--ink)
+  }
+  .chip.sel{background:var(--teal);border-color:var(--teal);color:#fff;transform:scale(1.04)}
+
+  .card{background:var(--card);border:1.5px solid var(--cream-deep);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+  .tag{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:99px;font-size:11.5px;font-weight:900;letter-spacing:.2px}
+  .tag.lav{background:var(--lav-soft);color:#6C4FB8}
+  .tag.lime{background:var(--lime-soft);color:var(--lime-dark)}
+  .tag.coral{background:var(--coral-soft);color:#D95B4E}
+  .tag.blue{background:var(--blue-soft);color:#2E6FA8}
+  .tag.sun{background:var(--sun-soft);color:#B8860B}
+
+  /* mascot speech bubble */
+  .buddy-row{display:flex;align-items:flex-end;gap:10px;margin-bottom:18px}
+  .buddy-row .mascot{flex:none;animation:floaty 3.2s ease-in-out infinite}
+  @keyframes floaty{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
+
+  /* ---------- animated PicklePal (brand mascot) ---------- */
+  .pp-svg{overflow:visible}
+  .pp-svg *{transform-box:fill-box}
+  .pp-all{animation:ppBob 2.4s ease-in-out infinite;transform-origin:50% 100%}
+  @keyframes ppBob{0%,100%{transform:translateY(0) scale(1,1)}12%{transform:translateY(1px) scale(1.02,.97)}45%{transform:translateY(-4px) scale(.99,1.02)}70%{transform:translateY(0) scale(1,1)}}
+  .pp-leaves{animation:ppSway 2.4s ease-in-out infinite;transform-origin:50% 100%}
+  @keyframes ppSway{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(6deg)}}
+  .pp-paddlearm{animation:ppPaddle 2.4s ease-in-out infinite;transform-origin:85% 15%}
+  @keyframes ppPaddle{0%,100%{transform:rotate(0deg)}40%{transform:rotate(-14deg)}60%{transform:rotate(-10deg)}}
+  .pp-ballarm{animation:ppBallArm 2.4s ease-in-out infinite;transform-origin:15% 85%}
+  @keyframes ppBallArm{0%,100%{transform:rotate(0deg) translateY(0)}45%{transform:rotate(8deg) translateY(-3px)}}
+  .pp-spark{animation:ppSpark 1.6s ease-in-out infinite;transform-origin:50% 50%}
+  .pp-spark.s2{animation-delay:.3s}.pp-spark.s3{animation-delay:.6s}
+  @keyframes ppSpark{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.15)}}
+  .pp-eye{animation:ppBlink 4.2s infinite;transform-origin:50% 50%}
+  @keyframes ppBlink{0%,91%,97%,100%{transform:scaleY(1)}94%{transform:scaleY(.08)}}
+  .pp-shadow{animation:ppShadow 2.4s ease-in-out infinite;transform-origin:50% 50%}
+  @keyframes ppShadow{0%,100%{transform:scale(1);opacity:.5}45%{transform:scale(.88);opacity:.32}}
+  .bubble{
+    background:#fff;border:1.5px solid var(--cream-deep);border-radius:18px 18px 18px 4px;padding:12px 15px;
+    box-shadow:var(--shadow);font-size:14px;line-height:1.45;font-weight:700;color:var(--ink);
+    animation:bubblePop .35s ease both;
+  }
+  @keyframes bubblePop{from{opacity:0;transform:scale(.9) translateY(6px)}to{opacity:1;transform:none}}
+
+  /* ---------- tab bar ---------- */
+  #tabbar{
+    position:absolute;bottom:0;left:0;right:0;height:82px;z-index:30;
+    background:#fff;border-top:2px solid var(--cream-deep);
+    display:none;align-items:flex-start;justify-content:space-around;padding:10px 8px 0;
+  }
+  #tabbar.show{display:flex}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 10px;border:none;background:none;font-family:inherit}
+  .tab svg{width:26px;height:26px}
+  .tab span{font-size:11px;font-weight:900;color:#8FB8A3}
+  .tab svg *{stroke:#8FB8A3}
+  .tab{border-radius:18px;transition:background .2s}
+  .tab.on{background:var(--lime-soft)}
+  .tab.on span{color:var(--lime-dark)}
+  .tab.on svg *{stroke:var(--lime-dark)}
+
+  /* ---------- toast ---------- */
+  #toast{
+    position:absolute;left:16px;right:16px;bottom:96px;z-index:60;
+    background:var(--deep);color:#fff;border-radius:18px;padding:13px 16px;
+    display:flex;align-items:center;gap:11px;font-size:13.5px;font-weight:700;
+    transform:translateY(140px);opacity:0;transition:.4s cubic-bezier(.2,.9,.3,1.2);
+    box-shadow:0 12px 30px rgba(0,0,0,.25);pointer-events:none;
+  }
+  #toast.show{transform:none;opacity:1}
+  #toast .mascot{flex:none}
+
+  /* ---------- celebration overlay ---------- */
+  #celebrate{
+    position:absolute;inset:0;z-index:70;background:rgba(34,69,58,.45);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;padding:30px;
+  }
+  #celebrate.show{display:flex}
+  .celebrate-card{
+    background:#fff;border-radius:28px;padding:30px 24px;text-align:center;width:100%;
+    animation:bounceIn .5s cubic-bezier(.2,.9,.3,1.3) both;
+  }
+  @keyframes bounceIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+  .celebrate-card h3{font-size:22px;font-weight:900;margin:14px 0 6px}
+  .celebrate-card p{font-size:14px;color:var(--ink-soft);line-height:1.5;margin-bottom:18px}
+  .confetti{position:absolute;width:10px;height:10px;border-radius:3px;top:-20px;z-index:71;animation:fall linear both}
+  @keyframes fall{to{transform:translateY(920px) rotate(720deg)}}
+
+  /* character select */
+  .char-grid{display:flex;flex-direction:column;gap:12px}
+  .char-card{
+    display:flex;align-items:center;gap:14px;background:#fff;border:3px solid var(--cream-deep);
+    border-radius:24px;padding:14px 16px;cursor:pointer;transition:.18s;
+  }
+  .char-card:active{transform:scale(.98)}
+  .char-card .txt b{font-size:17px;font-weight:900;display:block}
+  .char-card .txt em{font-style:normal;font-size:12px;font-weight:800;padding:2px 9px;border-radius:99px;display:inline-block;margin:3px 0 5px}
+  .char-card .txt span{display:block;font-size:12.5px;color:var(--ink-soft);line-height:1.4}
+  .char-card.sel{border-color:var(--lime-dark);background:var(--lime-soft)}
+  .char-card.sel.c-dinky{border-color:var(--coral);background:var(--coral-soft)}
+  .char-card.sel.c-bloom{border-color:var(--lav);background:var(--lav-soft)}
+
+  /* home bits */
+  .home-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .home-head .hi{font-size:20px;font-weight:900}
+  .home-head .stage-lbl{font-size:12.5px;color:var(--ink-soft);font-weight:800}
+  .streak{margin-left:auto;flex:none;background:var(--coral-soft);border:2px solid #FFCEC2;border-radius:99px;padding:7px 12px;font-size:13px;font-weight:900;color:#E2543F}
+  .hero{
+    background:linear-gradient(135deg,var(--deep) 0%,var(--teal) 115%);color:#fff;
+    border-radius:30px;padding:22px;margin-bottom:14px;box-shadow:0 14px 32px rgba(23,82,67,.35);
+    position:relative;overflow:hidden;
+  }
+  .hero .lbl{font-size:11.5px;font-weight:900;letter-spacing:1.2px;opacity:.75;text-transform:uppercase}
+  .hero h3{font-size:21px;font-weight:900;margin:7px 0 4px;line-height:1.25}
+  .hero p{font-size:13.5px;opacity:.85;line-height:1.45;margin-bottom:14px}
+  .hero .btn{width:auto;padding:13px 24px;background:var(--sun);color:#6B4E00;box-shadow:0 5px 0 #E0A616;font-size:15px}
+  .hero .deco{position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:99px;background:rgba(255,255,255,.08)}
+  .hero .deco2{position:absolute;right:10px;bottom:-46px;width:100px;height:100px;border-radius:99px;background:rgba(255,255,255,.06)}
+  .week-bar{height:10px;border-radius:99px;background:var(--cream-deep);overflow:hidden;margin-top:10px}
+  .week-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--lime),var(--lime-dark));transition:width .6s ease}
+  .task{
+    display:flex;align-items:center;gap:13px;background:#fff;border:1.5px solid var(--cream-deep);border-radius:20px;
+    padding:14px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:transform .12s;
+  }
+  .task:active{transform:scale(.985)}
+  .task .ico{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none;transform:rotate(-4deg)}
+  .task:nth-child(even) .ico{transform:rotate(4deg)}
+  .task .txt{flex:1}
+  .task .txt b{display:block;font-size:14.5px;font-weight:800}
+  .task .txt span{font-size:12px;color:var(--ink-soft);font-weight:700}
+  .task .st{width:26px;height:26px;border-radius:99px;border:2.5px solid var(--cream-deep);flex:none;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:900}
+  .task.done{opacity:.72}
+  .task.done .st{background:var(--lime-dark);border-color:var(--lime-dark)}
+  .task.done .st::after{content:'✓'}
+  .task.done .txt b{text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:var(--lime-dark)}
+  .sec-title{font-size:12.5px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink);margin:18px 0 10px;display:flex;align-items:center;justify-content:space-between}
+  .sec-title a{font-size:12px;color:var(--teal);font-weight:900;letter-spacing:.2px;text-transform:none;text-decoration:none;cursor:pointer}
+
+  /* lesson */
+  .lesson-step{display:none}
+  .lesson-step.on{display:block;animation:screenIn .3s ease both}
+  .lesson-visual{background:var(--blue-soft);border-radius:24px;padding:26px;display:flex;align-items:center;justify-content:center;font-size:56px;margin-bottom:18px;min-height:150px}
+  .lesson-step h3{font-size:21px;font-weight:900;margin-bottom:8px}
+  .lesson-step p{font-size:15px;line-height:1.6;color:var(--ink-soft)}
+  .lesson-step .callout{margin-top:14px;background:var(--coral-soft);border:2px dashed #F8B4AA;border-radius:16px;padding:12px 14px;font-size:13.5px;font-weight:800;color:#C2503E;line-height:1.5}
+
+  /* match cards */
+  .pal-card{background:#fff;border:1.5px solid var(--cream-deep);border-radius:24px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .pal-top{display:flex;align-items:center;gap:13px;margin-bottom:11px}
+  .avatar{width:52px;height:52px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:900;color:#fff;flex:none}
+  .pal-top b{font-size:16.5px;font-weight:900;display:block}
+  .pal-top span{font-size:12.5px;color:var(--ink-soft);font-weight:700}
+  .match-pct{margin-left:auto;text-align:center;background:var(--lime-soft);border-radius:14px;padding:7px 11px;flex:none}
+  .match-pct b{font-size:16px;color:var(--lime-dark)}
+  .match-pct span{display:block;font-size:9.5px;font-weight:900;color:var(--lime-dark);letter-spacing:.5px}
+  .pal-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .pal-card .btn{padding:12px;font-size:14.5px;border-radius:15px}
+
+  /* session plan timeline */
+  .tl{margin:6px 0 14px}
+  .tl-item{display:flex;gap:13px;position:relative;padding-bottom:18px}
+  .tl-item::before{content:'';position:absolute;left:17px;top:38px;bottom:2px;width:3px;border-radius:9px;background:var(--cream-deep)}
+  .tl-item:last-child::before{display:none}
+  #s-paywall .tl-item::before{display:none}
+  #s-paywall .tl-item{padding-bottom:12px}
+  .tl-dot{width:37px;height:37px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none;z-index:1}
+  .tl-item b{display:block;font-size:14.5px;font-weight:800}
+  .tl-item span{font-size:12.5px;color:var(--ink-soft);font-weight:700}
+
+  /* progress path */
+  .stage-path{margin:8px 0 4px}
+  .stage-row{display:flex;gap:14px;align-items:flex-start;position:relative;padding-bottom:22px}
+  .stage-row::before{content:'';position:absolute;left:21px;top:46px;bottom:0;width:4px;border-radius:9px;background:var(--cream-deep)}
+  .stage-row:last-child::before{display:none}
+  .stage-row.done::before{background:var(--lime)}
+  .stage-badge{width:44px;height:44px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;z-index:1;border:3px solid var(--cream-deep);background:#fff}
+  .stage-row.done .stage-badge{background:var(--lime);border-color:var(--lime-dark)}
+  .stage-row.now .stage-badge{background:var(--lav);border-color:#8A6FC9;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(167,148,216,.5)}50%{box-shadow:0 0 0 9px rgba(167,148,216,0)}}
+  .stage-row .txt b{font-size:15px;font-weight:900;display:block}
+  .stage-row .txt span{font-size:12.5px;color:var(--ink-soft);line-height:1.4;display:block}
+  .stage-row.now .txt b{color:#6C4FB8}
+
+  .ring-wrap{display:flex;align-items:center;gap:16px}
+  .ring{position:relative;width:86px;height:86px;flex:none}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900}
+  .ring .num b{font-size:20px}
+  .ring .num span{font-size:9.5px;color:var(--ink-soft);letter-spacing:.4px}
+
+  .toggle-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1.5px solid var(--cream-deep)}
+  .toggle-row:last-child{border-bottom:none}
+  .toggle-row .txt{flex:1}
+  .toggle-row .txt b{font-size:14px;font-weight:800;display:block}
+  .toggle-row .txt span{font-size:12px;color:var(--ink-soft)}
+  .switch{width:46px;height:27px;border-radius:99px;background:var(--cream-deep);position:relative;cursor:pointer;transition:.2s;flex:none}
+  .switch::after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:99px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:.2s}
+  .switch.on{background:var(--lime-dark)}
+  .switch.on::after{left:22px}
+
+  .center{text-align:center}
+  .mt-auto{margin-top:auto}
+  .grow{flex:1}
+  .small-link{font-size:13px;font-weight:800;color:var(--ink-soft);text-align:center;cursor:pointer;padding:10px;text-decoration:underline;text-underline-offset:3px}
+
+  .builder-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center}
+  .builder-wrap .bounce{animation:heroBounce 1.1s ease-in-out infinite}
+  @keyframes heroBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  .build-steps{margin-top:26px;text-align:left}
+  .build-step{display:flex;align-items:center;gap:10px;font-size:14.5px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;opacity:.25;transition:.4s}
+  .build-step.on{opacity:1;color:var(--ink)}
+  .build-step .dot{width:22px;height:22px;border-radius:99px;background:var(--cream-deep);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:900;flex:none;transition:.3s}
+  .build-step.on .dot{background:var(--lime-dark)}
+  .build-step.on .dot::after{content:'✓'}
+
+  .stage-reveal{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center}
+  .stage-chip{
+    background:var(--lav-soft);border:3px solid var(--lav);color:#6C4FB8;border-radius:99px;
+    padding:10px 24px;font-size:19px;font-weight:900;margin:18px 0 12px;
+    animation:bounceIn .6s cubic-bezier(.2,.9,.3,1.4) both .2s;
+  }
+  .price-alt{background:var(--lime-soft);border-radius:14px;padding:11px 13px;margin-top:10px;font-size:12.5px;font-weight:700;color:var(--lime-dark);display:flex;gap:8px;align-items:center}
+</style>
+</head>
+<body>
+  <aside class="side-note">
+    <h1>Pickle<span class="pal">Pal</span></h1>
+    <p>Interactive prototype of the beginner-first pickleball companion.</p>
+    <p>Click through the phone to explore the full MVP journey — onboarding, weekly plan, lessons, beginner matching, guided sessions, and progress.</p>
+    <p><span class="kbd">Tip</span> Pick a different companion character to see the app's voice change.</p>
+  </aside>
+
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span>●●●&nbsp; ⏻</span></div>
+    <div id="screens">
+
+      <!-- ===== WELCOME ===== -->
+      <section class="screen no-tabs" id="s-welcome">
+        <div class="builder-wrap">
+          <div id="welcome-mascot"></div>
+          <h2 class="q" style="font-size:34px;margin-top:18px">Pickle<span style="color:var(--lime-dark)">Pal</span></h2>
+          <p class="sub" style="margin-bottom:0">Your friendly guide from <b>“total beginner”</b><br>to <b>“see you at open play!”</b></p>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="go('s-char')">Let's get started</button>
+          <div class="small-link">I already have an account</div>
+        </div>
+      </section>
+
+      <!-- ===== CHARACTER SELECT ===== -->
+      <section class="screen no-tabs" id="s-char">
+        <div class="topbar">
+          <button class="back-btn" onclick="back()">←</button>
+          <div class="progress-dots"><i class="on"></i><i></i><i></i><i></i></div>
+        </div>
+        <h2 class="q">Choose your companion</h2>
+        <p class="sub">Your pal cheers you on, explains the confusing stuff, and never judges. You can switch anytime.</p>
+        <div class="char-grid" id="char-grid"></div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="go('s-goal')">Team up with <span id="char-btn-name">Pip</span></button>
+        </div>
+      </section>
+
+      <!-- ===== GOAL ===== -->
+      <section class="screen no-tabs" id="s-goal">
+        <div class="topbar">
+          <button class="back-btn" onclick="back()">←</button>
+          <div class="progress-dots"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+        </div>
+        <div class="buddy-row"><span id="bub-goal-m"></span><div class="bubble" id="bub-goal">What brings you to pickleball? There's no wrong answer!</div></div>
+        <h2 class="q">Pick your goal</h2>
+        <div id="goal-opts">
+          <div class="opt" data-v="basics"><div class="ico" style="background:var(--lime-soft)">🌱</div><div class="txt"><b>Get comfortable with the basics</b><span>Rules, scoring, serving — the confusing stuff</span></div><div class="tick"></div></div>
+          <div class="opt" data-v="people"><div class="ico" style="background:var(--coral-soft)">👋</div><div class="txt"><b>Meet people to play with</b><span>Patient partners at my level</span></div><div class="tick"></div></div>
+          <div class="opt" data-v="openplay"><div class="ico" style="background:var(--blue-soft)">🏓</div><div class="txt"><b>Get ready for open play</b><span>Build up to joining drop-in games</span></div><div class="tick"></div></div>
+          <div class="opt" data-v="fun"><div class="ico" style="background:var(--sun-soft)">☀️</div><div class="txt"><b>Have fun and stay active</b><span>No pressure, just play</span></div><div class="tick"></div></div>
+        </div>
+        <div class="btn-row"><button class="btn primary" id="goal-next" disabled onclick="go('s-assess')">Continue</button></div>
+      </section>
+
+      <!-- ===== ASSESSMENT ===== -->
+      <section class="screen no-tabs" id="s-assess">
+        <div class="topbar">
+          <button class="back-btn" onclick="back()">←</button>
+          <div class="progress-dots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+        </div>
+        <div class="buddy-row"><span id="bub-assess-m"></span><div class="bubble">Be honest — “never played” is a great place to start!</div></div>
+        <h2 class="q">How many times have you played?</h2>
+        <div class="chips" id="played-chips">
+          <div class="chip" data-v="0">Never</div>
+          <div class="chip" data-v="1-5">1–5 times</div>
+          <div class="chip" data-v="6-20">6–20 times</div>
+          <div class="chip" data-v="20+">20+ times</div>
+        </div>
+        <h2 class="q" style="font-size:20px">What already feels okay?</h2>
+        <p class="sub" style="margin-bottom:12px">Tap all that apply — or none at all.</p>
+        <div class="chips" id="skill-chips">
+          <div class="chip" data-v="rules">I know the basic rules</div>
+          <div class="chip" data-v="scoring">I can keep score</div>
+          <div class="chip" data-v="serve">I can get a serve in</div>
+          <div class="chip" data-v="rally">I can rally a few shots</div>
+          <div class="chip" data-v="none">None yet — that's why I'm here!</div>
+        </div>
+        <div class="btn-row"><button class="btn primary" id="assess-next" disabled onclick="go('s-life')">Continue</button></div>
+      </section>
+
+      <!-- ===== SCHEDULE / BUDGET / SOCIAL ===== -->
+      <section class="screen no-tabs" id="s-life">
+        <div class="topbar">
+          <button class="back-btn" onclick="back()">←</button>
+          <div class="progress-dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+        </div>
+        <h2 class="q">Let's make it fit your life</h2>
+        <p class="sub">Your plan bends around your schedule and budget — not the other way around.</p>
+        <h2 class="q" style="font-size:17px">Days you could practice</h2>
+        <div class="chips" id="day-chips">
+          <div class="chip" data-v="Mon">Mon</div><div class="chip" data-v="Tue">Tue</div><div class="chip" data-v="Wed">Wed</div>
+          <div class="chip" data-v="Thu">Thu</div><div class="chip" data-v="Fri">Fri</div><div class="chip" data-v="Sat">Sat</div><div class="chip" data-v="Sun">Sun</div>
+        </div>
+        <h2 class="q" style="font-size:17px">Monthly practice budget</h2>
+        <div class="chips" id="budget-chips">
+          <div class="chip" data-v="0">Free stuff only</div><div class="chip" data-v="25">Up to $25</div>
+          <div class="chip" data-v="75">Up to $75</div><div class="chip" data-v="75+">$75+</div>
+        </div>
+        <h2 class="q" style="font-size:17px">Playing with new people feels…</h2>
+        <div class="chips" id="social-chips">
+          <div class="chip" data-v="1on1">Scary — 1-on-1 first please</div>
+          <div class="chip" data-v="small">Okay in a small group</div>
+          <div class="chip" data-v="open">Totally fine!</div>
+        </div>
+        <div class="btn-row"><button class="btn primary" id="life-next" disabled onclick="startBuild()">Build my plan</button></div>
+      </section>
+
+      <!-- ===== BUILDING ===== -->
+      <section class="screen no-tabs" id="s-building">
+        <div class="builder-wrap">
+          <div class="bounce" id="build-mascot"></div>
+          <h2 class="q" style="margin-top:16px">Building your plan…</h2>
+          <div class="build-steps">
+            <div class="build-step" id="bs1"><div class="dot"></div>Reading your self-assessment</div>
+            <div class="build-step" id="bs2"><div class="dot"></div>Picking your first skill focus</div>
+            <div class="build-step" id="bs3"><div class="dot"></div>Finding budget-friendly options nearby</div>
+            <div class="build-step" id="bs4"><div class="dot"></div>Looking for patient practice pals</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== STAGE REVEAL ===== -->
+      <section class="screen no-tabs" id="s-stage">
+        <div class="stage-reveal">
+          <span id="stage-mascot"></span>
+          <div class="stage-chip">🌿 Rally Starter</div>
+          <h2 class="q" style="font-size:22px">That's your starting stage!</h2>
+          <p class="sub" style="max-width:290px">You know the vibe of the game and can hit the ball — now let's make serving and scoring feel easy. No ratings, no rankings. Just your next step.</p>
+          <div class="card" style="width:100%;text-align:left">
+            <span class="tag lav">Your 4-week plan</span>
+            <h3 style="font-size:17px;font-weight:900;margin:8px 0 4px">Serve & score with confidence</h3>
+            <p style="font-size:13px;color:var(--ink-soft);line-height:1.5">Week 1 · Scoring basics &nbsp;→&nbsp; Week 2 · Reliable serves &nbsp;→&nbsp; Week 3 · Keep the rally going &nbsp;→&nbsp; Week 4 · First relaxed game</p>
+          </div>
+        </div>
+        <div class="btn-row"><button class="btn primary" onclick="enterApp()">Show me week 1</button></div>
+      </section>
+
+      <!-- ===== HOME ===== -->
+      <section class="screen" id="s-home">
+        <div class="home-head">
+          <span id="home-mascot"></span>
+          <div><div class="hi">Hey, Maya!</div><div class="stage-lbl">🌿 Rally Starter · Week 1 of 4</div></div>
+          <div class="streak">🔥 3</div>
+        </div>
+        <div class="buddy-row" style="margin-bottom:14px"><div class="bubble" id="home-bubble" style="border-radius:4px 18px 18px 18px"></div></div>
+        <div class="hero">
+          <div class="deco"></div><div class="deco2"></div>
+          <div class="lbl">Today's next step</div>
+          <h3 id="hero-title">Scoring, made simple</h3>
+          <p id="hero-sub">A 3-minute lesson. By the end, calling the score will feel natural.</p>
+          <button class="btn" id="hero-btn" onclick="go('s-lesson')">▶&nbsp; Start 3-min lesson</button>
+        </div>
+        <div class="card" style="padding:15px 18px">
+          <div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:800">
+            <span>This week: Scoring basics</span><span id="week-count" style="color:var(--lime-dark)">0 of 5</span>
+          </div>
+          <div class="week-bar"><i id="week-fill" style="width:2%"></i></div>
+        </div>
+        <div class="sec-title">This week's plan <a onclick="go('s-plan')">Full plan →</a></div>
+        <div id="task-list"></div>
+      </section>
+
+      <!-- ===== LESSON ===== -->
+      <section class="screen no-tabs" id="s-lesson">
+        <div class="topbar">
+          <button class="back-btn" onclick="back()">←</button>
+          <div class="title">Scoring, made simple</div>
+          <div class="progress-dots" id="lesson-dots"><i class="on"></i><i></i><i></i></div>
+        </div>
+        <div class="lesson-step on" id="ls1">
+          <div class="lesson-visual">0 – 0 – 2</div>
+          <h3>Three numbers, one story</h3>
+          <p>Every pickleball score has three parts: <b>your score</b>, <b>their score</b>, and <b>which server you are</b> (1 or 2).</p>
+          <div class="callout">💡 “Zero–zero–two” just means: nobody has scored yet, and the second server is serving. That's how most games start!</div>
+        </div>
+        <div class="lesson-step" id="ls2">
+          <div class="lesson-visual">🎯</div>
+          <h3>Only the serving team scores</h3>
+          <p>If you win a rally while <b>receiving</b>, you don't get a point — you get the serve. Points only come when your team served the rally.</p>
+          <div class="callout">💡 This is the #1 thing that confuses new players. You're ahead of the curve now.</div>
+        </div>
+        <div class="lesson-step" id="ls3">
+          <div class="lesson-visual">📣</div>
+          <h3>Call it before you serve</h3>
+          <p>Say the score out loud before every serve: <b>“4 – 2 – 1!”</b> It keeps everyone synced and instantly makes you sound like a regular.</p>
+          <div class="callout">💡 Nervous about saying it wrong? Everyone corrects each other kindly. It's part of the game's culture.</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="lesson-next" onclick="lessonNext()">Next</button>
+        </div>
+      </section>
+
+      <!-- ===== DRILL ===== -->
+      <section class="screen no-tabs" id="s-drill">
+        <div class="topbar">
+          <button class="back-btn" onclick="back()">←</button>
+          <div class="title">Solo drill · 10 min</div>
+        </div>
+        <div class="lesson-visual" style="background:var(--lime-soft)">🧱🏓</div>
+        <h2 class="q" style="font-size:22px">Wall rally warm-up</h2>
+        <p class="sub">All you need is a paddle, one ball, and any wall. Garage doors are perfect.</p>
+        <div class="card">
+          <div class="tl">
+            <div class="tl-item"><div class="tl-dot" style="background:var(--sun-soft)">1️⃣</div><div><b>2 min · Soft taps</b><span>Stand close, tap the ball gently against the wall</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--lime-soft)">2️⃣</div><div><b>4 min · Step back & rally</b><span>Take two steps back, aim for 5 hits in a row</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--blue-soft)">3️⃣</div><div><b>4 min · Serve practice</b><span>Drop-serve at a wall target 10 times</span></div></div>
+          </div>
+          <span class="tag lime">Focus: paddle control</span> <span class="tag sun">Streak counts even at 2 min!</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="completeTask('drill','Drill done! Your paddle control is growing 🌱')">Mark drill complete</button>
+        </div>
+      </section>
+
+      <!-- ===== CLASS DISCOVERY ===== -->
+      <section class="screen no-tabs" id="s-class">
+        <div class="topbar">
+          <button class="back-btn" onclick="back()">←</button>
+          <div class="title">Beginner classes near you</div>
+        </div>
+        <div class="buddy-row"><span id="bub-class-m"></span><div class="bubble">These all fit your <b>“up to $25”</b> budget — and I found a free option too!</div></div>
+        <div class="pal-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div><b style="font-size:16px">Intro to Pickleball Clinic</b><br><span style="font-size:12.5px;color:var(--ink-soft);font-weight:700">Lincoln Park Courts · 1.2 mi · Sat 10am</span></div>
+            <b style="font-size:17px;color:var(--lime-dark)">$15</b>
+          </div>
+          <div class="pal-tags"><span class="tag lime">True beginners</span><span class="tag blue">Group of 8</span><span class="tag sun">Covers scoring ✓</span></div>
+          <button class="btn primary" onclick="completeTask('cls','Class saved to your plan! Saturday 10am 🎉')">Reserve a spot</button>
+          <div class="price-alt">💚 Free alternative: Community beginner meetup, Sundays 9am at Riverside Park</div>
+        </div>
+        <div class="pal-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div><b style="font-size:16px">Serving Fundamentals</b><br><span style="font-size:12.5px;color:var(--ink-soft);font-weight:700">Westside Rec Center · 2.8 mi · Wed 6pm</span></div>
+            <b style="font-size:17px;color:var(--lime-dark)">$22</b>
+          </div>
+          <div class="pal-tags"><span class="tag lime">Beginner-friendly</span><span class="tag coral">Small group of 4</span></div>
+          <button class="btn ghost" onclick="toast('Prototype note: the $15 clinic above is the wired-up flow!','📍')">See details</button>
+          <div class="price-alt">💚 Cheaper together: split a shared lesson with a practice pal — $11 each</div>
+        </div>
+      </section>
+
+      <!-- ===== PLAN ===== -->
+      <section class="screen" id="s-plan">
+        <h2 class="q">Your 4-week plan</h2>
+        <p class="sub">Serve &amp; score with confidence · built around your Tue / Thu / Sat availability</p>
+        <div class="card" style="border:3px solid var(--lime)">
+          <span class="tag lime">Week 1 · You are here</span>
+          <h3 style="font-size:17px;font-weight:900;margin:8px 0 3px">Scoring basics</h3>
+          <p style="font-size:13px;color:var(--ink-soft);line-height:1.5;margin-bottom:8px">Learn the three-number score, only-server-scores rule, and call the score with confidence.</p>
+          <div class="week-bar"><i id="plan-week-fill" style="width:2%"></i></div>
+        </div>
+        <div class="card">
+          <span class="tag blue">Week 2</span>
+          <h3 style="font-size:16px;font-weight:900;margin:8px 0 3px">Reliable serves</h3>
+          <p style="font-size:13px;color:var(--ink-soft)">Drop serve technique · 7-of-10 in-court challenge · serving class option</p>
+        </div>
+        <div class="card">
+          <span class="tag sun">Week 3</span>
+          <h3 style="font-size:16px;font-weight:900;margin:8px 0 3px">Keep the rally going</h3>
+          <p style="font-size:13px;color:var(--ink-soft)">Cooperative rallying with a pal · 10-hit rally milestone · dink intro</p>
+        </div>
+        <div class="card">
+          <span class="tag coral">Week 4</span>
+          <h3 style="font-size:16px;font-weight:900;margin:8px 0 3px">First relaxed game</h3>
+          <p style="font-size:13px;color:var(--ink-soft)">Play a low-pressure game with your practice pal · celebrate! 🎉</p>
+        </div>
+        <div class="card" id="plan-next-card" style="cursor:pointer"></div>
+        <div class="card" style="background:var(--lav-soft);border-color:var(--lav-soft);box-shadow:none">
+          <p style="font-size:13px;font-weight:700;color:#6C4FB8;line-height:1.5">💜 Miss a day? No guilt, no broken streaks. Your plan quietly reshuffles around real life.</p>
+        </div>
+      </section>
+
+      <!-- ===== PLUS PAYWALL ===== -->
+      <section class="screen no-tabs" id="s-paywall">
+        <div class="topbar">
+          <button class="back-btn" onclick="back()">←</button>
+          <div class="title">PicklePal Plus</div>
+        </div>
+        <div class="center" style="margin:4px 0 10px"><span id="paywall-mascot"></span></div>
+        <h2 class="q center" style="font-size:26px">Your journey doesn't<br>stop at week 4 🌱</h2>
+        <p class="sub center">Your Rally Starter plan is <b>free forever</b>. Plus unlocks a fresh personalized plan for every stage after it.</p>
+        <div class="card" style="padding:15px 18px">
+          <div class="tl" style="margin:0">
+            <div class="tl-item"><div class="tl-dot" style="background:var(--lime-soft)">🗺️</div><div><b>A new 4-week plan every stage</b><span>Court Explorer is ready and waiting for you</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--blue-soft)">🎓</div><div><b>Full lesson & drill library</b><span>60+ bite-size lessons beyond the starter set</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--coral-soft)">🤝</div><div><b>Unlimited practice pals</b><span>More matches, group sessions & shared plans</span></div></div>
+            <div class="tl-item" style="padding-bottom:2px"><div class="tl-dot" style="background:var(--lav-soft)">📊</div><div><b>Confidence insights</b><span>See how far you've come, stage by stage</span></div></div>
+          </div>
+        </div>
+        <div id="price-opts">
+          <div class="opt sel" data-v="yearly"><div class="ico" style="background:var(--sun-soft)">🏆</div><div class="txt"><b>Yearly · $39.99</b><span>$3.33/mo · save 33%</span></div><span class="tag lime" style="margin-left:auto;flex:none">BEST VALUE</span><div class="tick" style="margin-left:8px"></div></div>
+          <div class="opt" data-v="monthly"><div class="ico" style="background:var(--blue-soft)">📅</div><div class="txt"><b>Monthly · $4.99</b><span>Cancel anytime</span></div><div class="tick"></div></div>
+        </div>
+        <div class="btn-row" style="padding-top:10px">
+          <button class="btn coral" onclick="startTrial()">Start 7-day free trial</button>
+          <div class="small-link" onclick="back()">Maybe later — my free plan stays free</div>
+        </div>
+        <p class="center" style="font-size:11.5px;font-weight:700;color:var(--ink-soft);padding-bottom:8px">No charge until day 7 · we'll remind you the day before</p>
+      </section>
+
+      <!-- ===== PALS / MATCHING ===== -->
+      <section class="screen" id="s-pals">
+        <h2 class="q">Practice pals</h2>
+        <p class="sub">Beginners near you who match your pace, goals, and comfort level — never random experts.</p>
+        <div id="upcoming-session"></div>
+        <div class="pal-card">
+          <div class="pal-top">
+            <div class="avatar" style="background:var(--blue)">J</div>
+            <div><b>Jordan</b><span>🌿 Rally Starter · 0.8 mi away</span></div>
+            <div class="match-pct"><b>92%</b><span>MATCH</span></div>
+          </div>
+          <div class="pal-tags">
+            <span class="tag lav">Still learning scoring</span><span class="tag lime">Wants to practice serving</span><span class="tag coral">Here for fun, not competition</span><span class="tag blue">Free Sat mornings</span>
+          </div>
+          <button class="btn primary" id="invite-jordan" onclick="go('s-invite')">Invite to practice</button>
+        </div>
+        <div class="pal-card">
+          <div class="pal-top">
+            <div class="avatar" style="background:var(--lav)">P</div>
+            <div><b>Priya</b><span>🌱 Curious Rookie · 1.5 mi away</span></div>
+            <div class="match-pct"><b>87%</b><span>MATCH</span></div>
+          </div>
+          <div class="pal-tags">
+            <span class="tag lav">Can rally a few shots</span><span class="tag coral">Looking for patient players</span><span class="tag blue">Prefers 1-on-1</span>
+          </div>
+          <button class="btn ghost" onclick="toast('Prototype note: Jordan (92% match) is the wired-up flow!','🤝')">Invite to practice</button>
+        </div>
+        <div class="pal-card">
+          <div class="pal-top">
+            <div class="avatar" style="background:var(--coral)">S</div>
+            <div><b>Sam</b><span>🌿 Rally Starter · 2.1 mi away</span></div>
+            <div class="match-pct"><b>81%</b><span>MATCH</span></div>
+          </div>
+          <div class="pal-tags">
+            <span class="tag lime">Practicing dinks</span><span class="tag blue">Small groups ok</span><span class="tag sun">Weekday evenings</span>
+          </div>
+          <button class="btn ghost" onclick="toast('Prototype note: Jordan (92% match) is the wired-up flow!','🤝')">Invite to practice</button>
+        </div>
+        <div class="card" style="background:var(--cream-deep);box-shadow:none">
+          <p style="font-size:12.5px;font-weight:700;color:var(--ink-soft);line-height:1.5">🛡️ You're always in control: profiles are only visible to matched beginners, meetups default to public courts, and you can report or block anyone in one tap.</p>
+        </div>
+      </section>
+
+      <!-- ===== INVITE ===== -->
+      <section class="screen no-tabs" id="s-invite">
+        <div class="topbar">
+          <button class="back-btn" onclick="back()">←</button>
+          <div class="title">Practice with Jordan</div>
+        </div>
+        <div class="buddy-row"><span id="bub-invite-m"></span><div class="bubble">I planned the whole session — you two just show up! You both want serving practice, so that's the focus.</div></div>
+        <div class="card">
+          <span class="tag blue">Suggested time & place</span>
+          <h3 style="font-size:17px;font-weight:900;margin:8px 0 2px">Saturday · 10:00–10:45am</h3>
+          <p style="font-size:13.5px;color:var(--ink-soft);font-weight:700">📍 Lincoln Park Courts (public) · Court 3 usually free</p>
+        </div>
+        <div class="card">
+          <span class="tag lime">Shared session plan</span>
+          <div class="tl" style="margin-top:10px">
+            <div class="tl-item"><div class="tl-dot" style="background:var(--sun-soft)">🤝</div><div><b>5 min · Warm-up & hellos</b><span>Easy tosses, no pressure</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--lime-soft)">🎯</div><div><b>10 min · Serving practice</b><span>Take turns, cheer every in-serve</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--blue-soft)">🏓</div><div><b>10 min · Cooperative rally</b><span>Goal: 10 hits together, not winners</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--coral-soft)">🎮</div><div><b>15 min · Casual game</b><span>Score practice! Call it out loud</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--lav-soft)">💭</div><div><b>5 min · Quick reflection</b><span>One thing that felt better today</span></div></div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn coral" onclick="sendInvite()">Send invitation 💌</button>
+          <button class="btn ghost" onclick="back()">Adjust plan</button>
+        </div>
+      </section>
+
+      <!-- ===== SESSION (accepted) ===== -->
+      <section class="screen no-tabs" id="s-session">
+        <div class="topbar">
+          <button class="back-btn" onclick="go('s-pals')">←</button>
+          <div class="title">Saturday's session</div>
+        </div>
+        <div class="card" style="text-align:center;background:var(--lime-soft);box-shadow:none">
+          <p style="font-weight:900;font-size:15px">🎉 Jordan accepted!</p>
+          <p style="font-size:13px;color:var(--ink-soft);font-weight:700">Sat 10:00am · Lincoln Park Courts (public)</p>
+        </div>
+        <div class="card">
+          <span class="tag lime">Your shared plan</span>
+          <div class="tl" style="margin-top:10px">
+            <div class="tl-item"><div class="tl-dot" style="background:var(--sun-soft)">🤝</div><div><b>Warm-up & hellos</b><span>5 min</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--lime-soft)">🎯</div><div><b>Serving practice</b><span>10 min</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--blue-soft)">🏓</div><div><b>Cooperative rally</b><span>10 min</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--coral-soft)">🎮</div><div><b>Casual game</b><span>15 min</span></div></div>
+            <div class="tl-item"><div class="tl-dot" style="background:var(--lav-soft)">💭</div><div><b>Reflection</b><span>5 min</span></div></div>
+          </div>
+        </div>
+        <div class="buddy-row"><span id="bub-session-m"></span><div class="bubble">Nervous? Totally normal. Jordan marked “still learning scoring” too — you're in the same boat! 💛</div></div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="go('s-reflect')">We played! Record it</button>
+        </div>
+      </section>
+
+      <!-- ===== REFLECT ===== -->
+      <section class="screen no-tabs" id="s-reflect">
+        <div class="topbar">
+          <button class="back-btn" onclick="back()">←</button>
+          <div class="title">How did it go?</div>
+        </div>
+        <h2 class="q">How do you feel after today's practice?</h2>
+        <p class="sub">This helps tune next week's plan. There are no wrong answers.</p>
+        <div class="chips" id="feel-chips" style="justify-content:center;margin:10px 0 20px">
+          <div class="chip" data-v="tough" style="font-size:26px;padding:12px 16px">😮‍💨</div>
+          <div class="chip" data-v="ok" style="font-size:26px;padding:12px 16px">🙂</div>
+          <div class="chip" data-v="good" style="font-size:26px;padding:12px 16px">😄</div>
+          <div class="chip" data-v="great" style="font-size:26px;padding:12px 16px">🤩</div>
+        </div>
+        <h2 class="q" style="font-size:18px">What felt better today?</h2>
+        <div class="chips">
+          <div class="chip sel">Calling the score</div><div class="chip">Serving</div><div class="chip sel">Rallying</div><div class="chip">Meeting someone new</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="finishSession()">Save & see my progress</button>
+        </div>
+      </section>
+
+      <!-- ===== PROGRESS ===== -->
+      <section class="screen" id="s-progress">
+        <h2 class="q">Your progress</h2>
+        <p class="sub">Effort and consistency — not wins.</p>
+        <div class="card">
+          <div class="ring-wrap">
+            <div class="ring">
+              <svg width="86" height="86" viewBox="0 0 86 86">
+                <circle cx="43" cy="43" r="36" fill="none" stroke="var(--cream-deep)" stroke-width="10"/>
+                <circle id="ring-fg" cx="43" cy="43" r="36" fill="none" stroke="var(--lime-dark)" stroke-width="10" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226" style="transition:stroke-dashoffset .8s ease"/>
+              </svg>
+              <div class="num"><b id="ring-num">0/5</b><span>THIS WEEK</span></div>
+            </div>
+            <div>
+              <b style="font-size:15.5px">Weekly activities</b>
+              <p style="font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-top:3px" id="ring-msg">Every lesson, drill, class, or practice session counts as one meaningful step.</p>
+            </div>
+          </div>
+        </div>
+        <div class="sec-title">Your journey</div>
+        <div class="card">
+          <div class="stage-path">
+            <div class="stage-row done"><div class="stage-badge">🌱</div><div class="txt"><b>Curious Rookie</b><span>Tried the game, learning the vibe ✓</span></div></div>
+            <div class="stage-row now"><div class="stage-badge">🌿</div><div class="txt"><b>Rally Starter</b><span>You are here — building serve & score confidence</span><div class="week-bar" style="margin-top:8px;width:180px"><i id="stage-fill" style="width:20%"></i></div></div></div>
+            <div class="stage-row"><div class="stage-badge">🧭</div><div class="txt"><b>Court Explorer</b><span>Comfortable rallying, exploring positioning</span></div></div>
+            <div class="stage-row"><div class="stage-badge">🤝</div><div class="txt"><b>Confident Partner</b><span>Plays relaxed games with regular pals</span></div></div>
+            <div class="stage-row"><div class="stage-badge">🏆</div><div class="txt"><b>Open-Play Ready</b><span>Walks onto any beginner court with a smile</span></div></div>
+          </div>
+        </div>
+        <div class="sec-title">Milestones</div>
+        <div class="chips" id="milestone-chips">
+          <div class="chip sel">🎓 First lesson</div>
+          <div class="chip" id="ms-drill">🧱 First solo drill</div>
+          <div class="chip" id="ms-pal">💌 First invite sent</div>
+          <div class="chip" id="ms-session">🏓 First practice pal session</div>
+          <div class="chip">📣 Called score in a real game</div>
+        </div>
+        <div class="sec-title">Privacy & safety</div>
+        <div class="card">
+          <div class="toggle-row"><div class="txt"><b>Profile visible to matches only</b><span>Hidden from public search</span></div><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="toggle-row"><div class="txt"><b>Suggest public courts only</b><span>All meetups at public locations</span></div><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="toggle-row"><div class="txt"><b>Open to new match invites</b><span>Pause anytime — no penalty</span></div><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+        </div>
+        <button class="btn ghost" style="margin-top:4px" onclick="toast('Reports go straight to a human review team. You can also block instantly.','🛡️')">Report or block someone</button>
+        <div class="small-link" onclick="restart()">↺ Restart prototype</div>
+      </section>
+
+    </div>
+    <nav id="tabbar"></nav>
+    <div id="toast"></div>
+    <div id="celebrate"></div>
+  </div>
+
+<script>
+/* ================= characters ================= */
+const CHARS = {
+  pip:   {name:'Pip',   color:'#2E8C7F', soft:'#DDF0ED', vibe:'The go-getter', desc:'Sporty and upbeat. Keeps you moving with pep talks and drills.'},
+  dinky: {name:'Dinky', color:'#F2796B', soft:'#FDE9E6', vibe:'The comfy one', desc:'Soft-spoken and cozy. Celebrates every tiny win, zero pressure.'},
+  bloom: {name:'Bloom', color:'#A794D8', soft:'#EFEAF9', vibe:'The gentle grower', desc:'Calm and patient. Reminds you progress grows one day at a time.'}
+};
+
+function ballBase(extra, size){
+  return `<svg class="mascot" width="${size}" height="${size}" viewBox="0 0 120 120">
+    <circle cx="60" cy="62" r="44" fill="#B9D94E"/>
+    <circle cx="60" cy="62" r="44" fill="url(#shadeG)" opacity=".25"/>
+    <circle cx="42" cy="48" r="5.5" fill="#7FA51F" opacity=".8"/>
+    <circle cx="80" cy="46" r="5" fill="#7FA51F" opacity=".8"/>
+    <circle cx="88" cy="70" r="5.5" fill="#7FA51F" opacity=".8"/>
+    <circle cx="34" cy="74" r="5" fill="#7FA51F" opacity=".8"/>
+    <circle cx="66" cy="98" r="5" fill="#7FA51F" opacity=".8"/>
+    ${extra}
+  </svg>`;
+}
+const SVG_DEFS = `<svg width="0" height="0" style="position:absolute"><defs>
+  <radialGradient id="shadeG" cx="35%" cy="30%" r="80%">
+    <stop offset="0%" stop-color="#fff" stop-opacity=".9"/><stop offset="60%" stop-color="#fff" stop-opacity="0"/>
+    <stop offset="100%" stop-color="#5d7a12" stop-opacity=".55"/>
+  </radialGradient>
+</defs></svg>`;
+
+function charSVG(id, size=72){
+  size = size || 72;
+  if(id==='pip') return ballBase(`
+    <path d="M18 52 a44 44 0 0 1 84 -2 l0 10 a44 46 0 0 0 -84 -6z" fill="#fff"/>
+    <path d="M18 54 a44 44 0 0 1 84 -2 l0 5 a44 46 0 0 0 -84 -1z" fill="#2E8C7F"/>
+    <circle cx="47" cy="66" r="5" fill="#1E3A32"/><circle cx="73" cy="66" r="5" fill="#1E3A32"/>
+    <circle cx="48.6" cy="64.4" r="1.7" fill="#fff"/><circle cx="74.6" cy="64.4" r="1.7" fill="#fff"/>
+    <path d="M52 80 q8 7 16 0" stroke="#1E3A32" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <circle cx="38" cy="76" r="4.5" fill="#F2796B" opacity=".45"/><circle cx="82" cy="76" r="4.5" fill="#F2796B" opacity=".45"/>
+  `, size);
+  if(id==='dinky') return ballBase(`
+    <path d="M17 50 a45 45 0 0 1 86 0 l-2 8 a44 44 0 0 0 -82 -1z" fill="#F2796B"/>
+    <path d="M20 49 a44 44 0 0 1 80 -1 l-1 4 a43 43 0 0 0 -78 -0z" fill="#fff" opacity=".85"/>
+    <path d="M14 52 l-8 -8 6 12 -10 2z" fill="#F2796B"/>
+    <path d="M44 64 q3 -4 6 0" stroke="#1E3A32" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <circle cx="73" cy="65" r="5" fill="#1E3A32"/><circle cx="74.6" cy="63.4" r="1.7" fill="#fff"/>
+    <path d="M50 79 q9 9 19 1" stroke="#1E3A32" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="38" cy="75" rx="5" ry="3.6" fill="#F2796B" opacity=".55"/><ellipse cx="84" cy="75" rx="5" ry="3.6" fill="#F2796B" opacity=".55"/>
+    <path d="M92 34 c3 -5 9 -3 9 1 c0 4 -7 7 -9 8 c-2 -1 -9 -4 -9 -8 c0 -4 6 -6 9 -1z" fill="#F2796B" transform="translate(4,-6) scale(.8)"/>
+  `, size);
+  return ballBase(`
+    <path d="M60 20 q-2 -12 4 -16" stroke="#5E8C3A" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <g transform="translate(64,2)">
+      <circle cx="0" cy="0" r="5" fill="#F5C94B"/>
+      <ellipse cx="0" cy="-9" rx="4.6" ry="6" fill="#A794D8"/><ellipse cx="0" cy="9" rx="4.6" ry="6" fill="#A794D8"/>
+      <ellipse cx="-9" cy="0" rx="6" ry="4.6" fill="#A794D8"/><ellipse cx="9" cy="0" rx="6" ry="4.6" fill="#A794D8"/>
+    </g>
+    <path d="M46 18 q-8 -2 -10 -8 q8 -2 12 4z" fill="#7FB24A"/>
+    <path d="M72 16 q8 -4 14 -1 q-5 7 -13 5z" fill="#7FB24A"/>
+    <circle cx="47" cy="64" r="5" fill="#1E3A32"/><circle cx="73" cy="64" r="5" fill="#1E3A32"/>
+    <circle cx="48.6" cy="62.4" r="1.7" fill="#fff"/><circle cx="74.6" cy="62.4" r="1.7" fill="#fff"/>
+    <path d="M51 78 q9 8 18 0" stroke="#1E3A32" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="37" cy="73" rx="5" ry="3.6" fill="#D8A0C8" opacity=".6"/><ellipse cx="83" cy="73" rx="5" ry="3.6" fill="#D8A0C8" opacity=".6"/>
+  `, size);
+}
+
+/* ============ animated brand mascot: PicklePal ============ */
+function picklepalSVG(size=110){
+  return `<svg class="mascot pp-svg" width="${size}" height="${size}" viewBox="0 0 150 150">
+    <ellipse class="pp-shadow" cx="75" cy="133" rx="38" ry="8" fill="#3FA98E" opacity=".45"/>
+    <g class="pp-all">
+      <!-- legs & feet -->
+      <rect x="60" y="106" width="9" height="18" rx="4.5" fill="#175243"/>
+      <rect x="81" y="106" width="9" height="18" rx="4.5" fill="#175243"/>
+      <ellipse cx="62" cy="126" rx="9" ry="5.5" fill="#175243"/>
+      <ellipse cx="88" cy="126" rx="9" ry="5.5" fill="#175243"/>
+      <!-- paddle arm (viewer left) -->
+      <g class="pp-paddlearm">
+        <rect x="4" y="22" width="30" height="40" rx="14" transform="rotate(-25 19 42)" fill="#2E8C7F"/>
+        <rect x="9" y="27" width="20" height="30" rx="9" transform="rotate(-25 19 42)" fill="#8ED0D6"/>
+        <path d="M22 58 L31 74" stroke="#175243" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M45 85 Q34 83 30 75" stroke="#175243" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+        <circle cx="31" cy="74" r="5.5" fill="#175243"/>
+      </g>
+      <!-- ball arm (viewer right) -->
+      <g class="pp-ballarm">
+        <path d="M105 85 Q118 81 122 70" stroke="#175243" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+        <circle cx="123" cy="66" r="9.5" fill="#E8E23C"/>
+        <circle cx="120" cy="63" r="1.7" fill="#B0AA1C"/><circle cx="126" cy="65" r="1.7" fill="#B0AA1C"/><circle cx="122" cy="70" r="1.7" fill="#B0AA1C"/>
+        <circle cx="123" cy="66" r="9.5" fill="url(#shadeG)" opacity=".2"/>
+        <circle cx="124" cy="74" r="5.5" fill="#175243"/>
+        <path class="pp-spark" d="M116 48 L113 41" stroke="#1FA08C" stroke-width="3" stroke-linecap="round"/>
+        <path class="pp-spark s2" d="M124 46 L124 38" stroke="#1FA08C" stroke-width="3" stroke-linecap="round"/>
+        <path class="pp-spark s3" d="M132 48 L136 41" stroke="#1FA08C" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <!-- sprout leaves -->
+      <g class="pp-leaves">
+        <path d="M75 41 C63 31 56 24 61 14 C72 16 77 29 75 41" fill="#175243"/>
+        <path d="M75 41 C85 28 93 23 97 28 C95 38 84 43 75 41" fill="#175243"/>
+        <path d="M75 43 Q74 34 76 30" stroke="#175243" stroke-width="4" fill="none" stroke-linecap="round"/>
+      </g>
+      <!-- body -->
+      <circle cx="75" cy="78" r="38" fill="#B5DC3F"/>
+      <circle cx="75" cy="78" r="38" fill="url(#shadeG)" opacity=".28"/>
+      <circle cx="48" cy="68" r="4.5" fill="#7FA51F" opacity=".85"/>
+      <circle cx="102" cy="68" r="4.5" fill="#7FA51F" opacity=".85"/>
+      <circle cx="46" cy="93" r="4" fill="#7FA51F" opacity=".85"/>
+      <circle cx="104" cy="93" r="4" fill="#7FA51F" opacity=".85"/>
+      <circle cx="75" cy="110" r="4" fill="#7FA51F" opacity=".85"/>
+      <circle cx="60" cy="105" r="3.4" fill="#7FA51F" opacity=".7"/>
+      <circle cx="90" cy="105" r="3.4" fill="#7FA51F" opacity=".7"/>
+      <!-- sweatband -->
+      <path d="M41 64 A38 38 0 0 1 109 64" stroke="#fff" stroke-width="13" fill="none" stroke-linecap="round"/>
+      <path d="M43.5 58 A38 38 0 0 1 106.5 58" stroke="#2E8C7F" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+      <path d="M41.5 69 A39.5 39.5 0 0 1 108.5 69" stroke="#2E8C7F" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+      <!-- face -->
+      <ellipse class="pp-eye" cx="62" cy="81" rx="5.6" ry="6" fill="#1E3A32"/>
+      <ellipse class="pp-eye" cx="88" cy="81" rx="5.6" ry="6" fill="#1E3A32"/>
+      <circle cx="64" cy="79" r="1.9" fill="#fff"/>
+      <circle cx="90" cy="79" r="1.9" fill="#fff"/>
+      <path d="M67 93 q8 7.5 16 0" stroke="#1E3A32" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+      <ellipse cx="52" cy="91" rx="5.4" ry="3.8" fill="#F2796B" opacity=".45"/>
+      <ellipse cx="98" cy="91" rx="5.4" ry="3.8" fill="#F2796B" opacity=".45"/>
+    </g>
+  </svg>`;
+}
+
+/* ================= state ================= */
+const state = {
+  character:'pip',
+  goal:null, played:null, skills:new Set(), days:new Set(), budget:null, social:null,
+  tasks:{lesson:false, drill:false, cls:false, pal:false, milestone:false},
+  invited:false, sessionDone:false, plus:false,
+  visited:new Set()
+};
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+function ch(){ return CHARS[state.character]; }
+function doneCount(){ return Object.values(state.tasks).filter(Boolean).length; }
+</script>
+<script>
+/* ================= navigation ================= */
+document.body.insertAdjacentHTML('afterbegin', SVG_DEFS);
+const TAB_SCREENS = ['s-home','s-plan','s-pals','s-progress'];
+let current = 's-welcome';
+let navStack = [];
+
+function show(id, isBack){
+  const from = $('#'+current);
+  if(from) from.classList.remove('active','back-anim');
+  const to = $('#'+id);
+  to.classList.add('active');
+  if(isBack) to.classList.add('back-anim');
+  to.scrollTop = 0;
+  current = id;
+  $('#tabbar').classList.toggle('show', TAB_SCREENS.includes(id));
+  renderTabs();
+}
+function go(id){
+  if(id===current) return;
+  if(TAB_SCREENS.includes(id)) navStack = ['s-home'].filter(h=>h!==id);
+  else navStack.push(current);
+  show(id,false);
+  onEnter(id);
+}
+function back(){
+  const prev = navStack.pop() || 's-home';
+  show(prev,true);
+  onEnter(prev);
+}
+function onEnter(id){
+  if(id==='s-home') renderHome();
+  if(id==='s-pals') renderUpcoming();
+  if(id==='s-progress') renderProgress();
+  if(id==='s-plan'){ $('#plan-week-fill').style.width = Math.max(2, doneCount()/5*100)+'%'; renderPlanNext(); }
+  if(id==='s-paywall'){ const pm=$('#paywall-mascot'); if(pm && !pm.innerHTML) pm.innerHTML = picklepalSVG(96); }
+  if(id==='s-lesson') resetLesson();
+}
+
+/* ================= tab bar ================= */
+const TABS = [
+  {id:'s-home', label:'Home', d:'M4 12 L14 4 L24 12 M7 11 V23 H21 V11'},
+  {id:'s-plan', label:'Plan', d:'M8 4 H20 A2 2 0 0 1 22 6 V22 A2 2 0 0 1 20 24 H8 A2 2 0 0 1 6 22 V6 A2 2 0 0 1 8 4 M10 10 H18 M10 14 H18 M10 18 H15'},
+  {id:'s-pals', label:'Pals', d:'M10 13 A4 4 0 1 0 10 5 A4 4 0 0 0 10 13 M18 14 A3.5 3.5 0 1 0 18 7 M3 23 C3 18 6 16 10 16 C14 16 17 18 17 23 M19 17 C22 17.5 25 19 25 23'},
+  {id:'s-progress', label:'Progress', d:'M5 23 V15 M12 23 V9 M19 23 V13 M26 23 V5'}
+];
+function renderTabs(){
+  $('#tabbar').innerHTML = TABS.map(t=>`
+    <button class="tab ${current===t.id?'on':''}" onclick="go('${t.id}')">
+      <svg viewBox="0 0 28 28" fill="none"><path d="${t.d}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>${t.label}</span>
+    </button>`).join('');
+}
+
+/* ================= character select ================= */
+function renderChars(){
+  $('#char-grid').innerHTML = Object.entries(CHARS).map(([id,c])=>`
+    <div class="char-card c-${id} ${state.character===id?'sel':''}" onclick="pickChar('${id}')">
+      ${charSVG(id,84)}
+      <div class="txt"><b>${c.name}</b><em style="background:${c.soft};color:${c.color}">${c.vibe}</em><span>${c.desc}</span></div>
+    </div>`).join('');
+  $('#char-btn-name').textContent = ch().name;
+}
+function pickChar(id){ state.character = id; renderChars(); paintMascots(); }
+function paintMascots(){
+  const slots = {
+    'build-mascot':110,'stage-mascot':100,'home-mascot':46,
+    'bub-goal-m':44,'bub-assess-m':44,'bub-class-m':44,'bub-invite-m':44,'bub-session-m':44
+  };
+  for(const [slot,size] of Object.entries(slots)){
+    const el = document.getElementById(slot);
+    if(el) el.innerHTML = charSVG(state.character,size);
+  }
+  /* the brand mascot — animated PicklePal — greets on the landing screen */
+  const wm = document.getElementById('welcome-mascot');
+  if(wm) wm.innerHTML = picklepalSVG(130);
+}
+
+/* ================= option / chip selection ================= */
+function singleSelect(containerSel, cls, onPick){
+  $$(containerSel+' > *').forEach(el=>{
+    el.addEventListener('click',()=>{
+      $$(containerSel+' > *').forEach(o=>o.classList.remove(cls));
+      el.classList.add(cls);
+      onPick(el.dataset.v);
+    });
+  });
+}
+function multiSelect(containerSel, cls, set, onPick){
+  $$(containerSel+' > *').forEach(el=>{
+    el.addEventListener('click',()=>{
+      el.classList.toggle(cls);
+      el.classList.contains(cls) ? set.add(el.dataset.v) : set.delete(el.dataset.v);
+      if(onPick) onPick();
+    });
+  });
+}
+singleSelect('#goal-opts','sel', v=>{ state.goal=v; $('#goal-next').disabled=false; });
+singleSelect('#played-chips','sel', v=>{ state.played=v; checkAssess(); });
+multiSelect('#skill-chips','sel', state.skills, checkAssess);
+function checkAssess(){ $('#assess-next').disabled = !state.played; }
+multiSelect('#day-chips','sel', state.days, checkLife);
+singleSelect('#budget-chips','sel', v=>{ state.budget=v; checkLife(); });
+singleSelect('#social-chips','sel', v=>{ state.social=v; checkLife(); });
+function checkLife(){ $('#life-next').disabled = !(state.days.size && state.budget && state.social); }
+singleSelect('#feel-chips','sel', ()=>{});
+
+/* ================= plan builder ================= */
+function startBuild(){
+  go('s-building');
+  [1,2,3,4].forEach((n,i)=> setTimeout(()=> $('#bs'+n).classList.add('on'), 550+i*650));
+  setTimeout(()=> go('s-stage'), 550+4*650+500);
+}
+function enterApp(){ navStack=[]; go('s-home'); }
+
+/* ================= home ================= */
+const HOME_LINES = {
+  pip:   `Let's go, Maya! One 3-minute lesson and today is officially a win. Ready?`,
+  dinky: `Hi friend! Just one tiny lesson today — cozy pace, big progress. No rush at all.`,
+  bloom: `A little practice each day is how confidence blooms. Shall we start small?`
+};
+const TASK_DEFS = [
+  {key:'lesson', ico:'🎓', bg:'var(--blue-soft)',  title:'Lesson: Scoring, made simple', sub:'3 min · learn the three-number score', goto:'s-lesson'},
+  {key:'drill',  ico:'🧱', bg:'var(--lime-soft)',  title:'Solo drill: Wall rally warm-up', sub:'10 min · any wall works', goto:'s-drill'},
+  {key:'cls',    ico:'📍', bg:'var(--sun-soft)',   title:'Pick a beginner class', sub:'3 options under $25 · 1 free', goto:'s-class'},
+  {key:'pal',    ico:'🤝', bg:'var(--coral-soft)', title:'Practice with a pal', sub:'Jordan is a 92% match', goto:'s-pals'},
+  {key:'milestone', ico:'⭐', bg:'var(--lav-soft)', title:'Milestone: call the score', sub:'Say “0–0–2” out loud before a serve', goto:null}
+];
+function renderHome(){
+  paintMascots();
+  $('#home-bubble').textContent = HOME_LINES[state.character];
+  $('#task-list').innerHTML = TASK_DEFS.map(t=>`
+    <div class="task ${state.tasks[t.key]?'done':''}" onclick="taskTap('${t.key}')">
+      <div class="ico" style="background:${t.bg}">${t.ico}</div>
+      <div class="txt"><b>${t.title}</b><span>${t.key==='pal' && state.invited && !state.tasks.pal ? 'Scheduled: Sat 10am with Jordan ✓' : t.sub}</span></div>
+      <div class="st"></div>
+    </div>`).join('');
+  const n = doneCount();
+  $('#week-count').textContent = n+' of 5';
+  $('#week-fill').style.width = Math.max(2, n/5*100)+'%';
+  updateHero();
+}
+function updateHero(){
+  const t = TASK_DEFS.find(t=>!state.tasks[t.key]);
+  const hero = {title:'Week 1 complete! 🎉', sub:'You did every single step. Week 2 (reliable serves) unlocks Monday.', btn:'Preview week 2', goto:'s-plan'};
+  if(t){
+    hero.title = t.title.replace(/^[^:]+: /,'').replace(/^./,c=>c.toUpperCase());
+    if(t.key==='lesson'){ hero.title='Scoring, made simple'; hero.sub='A 3-minute lesson. By the end, calling the score will feel natural.'; hero.btn='▶  Start 3-min lesson'; }
+    if(t.key==='drill'){ hero.sub='A 10-minute wall drill — all you need is a paddle and a garage door.'; hero.btn='▶  Start drill'; }
+    if(t.key==='cls'){ hero.title='Find a beginner class'; hero.sub='3 beginner-friendly options near you fit your budget.'; hero.btn='Browse classes'; }
+    if(t.key==='pal'){ hero.title= state.invited?'Practice with Jordan':'Meet a practice pal'; hero.sub= state.invited?'Saturday 10am at Lincoln Park Courts. Your shared plan is ready.':'Jordan matches your pace, goals, and schedule — 92% compatible.'; hero.btn= state.invited?'View session':'See your matches'; }
+    if(t.key==='milestone'){ hero.title='Milestone: call the score'; hero.sub='Say the score out loud before a serve. Small step, huge confidence.'; hero.btn='I did it!'; }
+    hero.goto = t.key==='pal' && state.invited ? 's-session' : t.goto;
+    hero.key = t.key;
+  }
+  $('#hero-title').textContent = hero.title;
+  $('#hero-sub').textContent = hero.sub;
+  const btn = $('#hero-btn');
+  btn.innerHTML = hero.btn;
+  btn.onclick = ()=> hero.goto ? go(hero.goto) : completeTask('milestone','You called the score! That took guts — and now it\'s yours forever ⭐');
+}
+function taskTap(key){
+  if(key==='milestone'){
+    if(!state.tasks.milestone) completeTask('milestone','You called the score! That took guts — and now it\'s yours forever ⭐');
+    return;
+  }
+  const t = TASK_DEFS.find(t=>t.key===key);
+  if(key==='pal' && state.invited && !state.tasks.pal){ go('s-session'); return; }
+  go(t.goto);
+}
+
+/* ================= lesson ================= */
+let lessonStep = 1;
+function resetLesson(){
+  lessonStep = 1; syncLesson();
+}
+function syncLesson(){
+  [1,2,3].forEach(n=>{
+    $('#ls'+n).classList.toggle('on', n===lessonStep);
+    $('#lesson-dots').children[n-1].classList.toggle('on', n<=lessonStep);
+  });
+  $('#lesson-next').textContent = lessonStep<3 ? 'Next' : 'Finish lesson ✓';
+}
+function lessonNext(){
+  if(lessonStep<3){ lessonStep++; syncLesson(); }
+  else completeTask('lesson','First lesson done! “0–0–2” will never confuse you again 🎓');
+}
+
+/* ================= completion & celebration ================= */
+const CHEERS = {
+  pip:   ['Nailed it!','That\'s the energy!','You\'re on a roll!'],
+  dinky: ['So proud of you!','Every step counts, friend 💛','Look at you go!'],
+  bloom: ['Beautifully done.','Another day, another bloom 🌸','Growing steadily.']
+};
+function completeTask(key, msg){
+  const first = !state.tasks[key];
+  state.tasks[key] = true;
+  if(key==='drill') $('#ms-drill')?.classList.add('sel');
+  celebrate(CHEERS[state.character][Math.floor(doneCount()%3)], msg, ()=>{
+    navStack=[]; go('s-home');
+  });
+}
+function celebrate(title, msg, then, showCount=true){
+  const c = $('#celebrate');
+  c.innerHTML = `<div class="celebrate-card">
+      ${charSVG(state.character,110)}
+      <h3>${title}</h3><p>${msg}</p>
+      ${showCount?`<p style="font-size:12px;font-weight:900;color:var(--lime-dark);margin:-8px 0 14px">+1 meaningful activity · ${doneCount()} of 5 this week</p>`:''}
+      <button class="btn primary" id="cel-btn">Keep going</button>
+    </div>`;
+  c.classList.add('show');
+  confetti();
+  $('#cel-btn').onclick = ()=>{ c.classList.remove('show'); then && then(); };
+}
+function confetti(){
+  const colors = ['#9FC93C','#F2796B','#5F9FD8','#A794D8','#F5C94B'];
+  const phone = $('.phone');
+  for(let i=0;i<36;i++){
+    const p = document.createElement('div');
+    p.className='confetti';
+    p.style.left = (Math.random()*95)+'%';
+    p.style.background = colors[i%5];
+    p.style.animationDuration = (1.6+Math.random()*1.6)+'s';
+    p.style.animationDelay = (Math.random()*.5)+'s';
+    p.style.width = p.style.height = (7+Math.random()*7)+'px';
+    phone.appendChild(p);
+    setTimeout(()=>p.remove(), 4000);
+  }
+}
+
+/* ================= invite / session ================= */
+function sendInvite(){
+  state.invited = true;
+  navStack=[];
+  go('s-pals');
+  $('#ms-pal')?.classList.add('sel');
+  toast(`Invitation sent! I'll nudge you when Jordan replies 💌`);
+  setTimeout(()=>{
+    if(state.invited && !state.sessionDone) toast('Jordan accepted! Saturday 10am is on 🎉');
+    renderUpcoming();
+  }, 2600);
+}
+function renderUpcoming(){
+  const el = $('#upcoming-session');
+  if(!el) return;
+  if(state.sessionDone){
+    el.innerHTML = `<div class="card" style="background:var(--lime-soft);box-shadow:none">
+      <p style="font-weight:900;font-size:14px">✅ Practiced with Jordan · Saturday</p>
+      <p style="font-size:12.5px;color:var(--ink-soft);font-weight:700">Rally count: 12 hits together! Invite Jordan again?</p></div>`;
+    const inviteBtn = $('#invite-jordan');
+    if(inviteBtn) inviteBtn.textContent = 'Invite again';
+  } else if(state.invited){
+    el.innerHTML = `<div class="card" style="border:3px solid var(--coral);cursor:pointer" onclick="go('s-session')">
+      <span class="tag coral">Upcoming session</span>
+      <h3 style="font-size:16px;font-weight:900;margin:7px 0 2px">Saturday 10am · with Jordan</h3>
+      <p style="font-size:13px;color:var(--ink-soft);font-weight:700">📍 Lincoln Park Courts · shared plan ready →</p></div>`;
+    const inviteBtn = $('#invite-jordan');
+    if(inviteBtn){ inviteBtn.textContent = 'Invited ✓'; inviteBtn.classList.remove('primary'); inviteBtn.classList.add('ghost'); inviteBtn.onclick = ()=>go('s-session'); }
+  } else el.innerHTML='';
+}
+function finishSession(){
+  state.sessionDone = true;
+  state.tasks.pal = true;
+  $('#ms-session')?.classList.add('sel');
+  celebrate('Your first pal session! 🎉','You practiced with Jordan, rallied 12 hits, and called the score in a real game. This is exactly how confidence is built.', ()=>{
+    navStack=[]; go('s-progress');
+  });
+}
+
+/* ================= progress ================= */
+function renderProgress(){
+  const n = doneCount();
+  $('#ring-num').textContent = n+'/5';
+  $('#ring-fg').style.strokeDashoffset = 226 - (226*n/5);
+  $('#stage-fill').style.width = (20 + n*14)+'%';
+  $('#ring-msg').textContent = n===0 ? 'Every lesson, drill, class, or practice session counts as one meaningful step.'
+    : n<5 ? `${n} meaningful ${n===1?'activity':'activities'} this week. ${ch().name} says: quality over quantity!`
+    : `A perfect week! ${ch().name} is doing a happy dance right now.`;
+}
+
+/* ================= toast ================= */
+let toastTimer;
+function toast(msg, icon){
+  const t = $('#toast');
+  t.innerHTML = (icon ? `<span style="font-size:22px">${icon}</span>` : charSVG(state.character,38)) + `<span>${msg}</span>`;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3400);
+}
+function restart(){ location.reload(); }
+
+/* ================= Plus / paywall ================= */
+function renderPlanNext(){
+  const el = $('#plan-next-card');
+  if(!el) return;
+  if(state.plus){
+    el.style.cursor='default'; el.onclick=null;
+    el.style.borderColor='var(--sun)';
+    el.innerHTML = `<span class="tag sun">✨ Plus · Unlocked</span>
+      <h3 style="font-size:16px;font-weight:900;margin:8px 0 3px">Weeks 5–8 · Court Explorer plan</h3>
+      <p style="font-size:13px;color:var(--ink-soft)">Positioning basics · kitchen rules · first open-play visit with a pal. Ready when week 4 wraps!</p>`;
+  } else {
+    el.onclick = ()=>go('s-paywall');
+    el.style.borderColor='var(--cream-deep)';
+    el.innerHTML = `<div style="display:flex;align-items:center;gap:12px">
+      <div style="width:44px;height:44px;border-radius:16px;background:var(--sun-soft);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none">🔒</div>
+      <div style="flex:1"><span class="tag sun">✨ PicklePal Plus</span>
+        <h3 style="font-size:15.5px;font-weight:900;margin:5px 0 2px">Weeks 5–8 · Court Explorer plan</h3>
+        <p style="font-size:12.5px;color:var(--ink-soft)">A fresh personalized plan for your next stage →</p></div></div>`;
+  }
+}
+function startTrial(){
+  state.plus = true;
+  celebrate('Welcome to Plus! ✨','Your Court Explorer plan is unlocked and will start the moment you finish week 4. Your trial ends in 7 days — we\'ll remind you the day before.', ()=>{
+    navStack=[]; go('s-plan');
+  }, false);
+}
+singleSelect('#price-opts','sel', ()=>{});
+
+/* ================= init ================= */
+renderChars();
+paintMascots();
+renderTabs();
+show('s-welcome');
+</script>
+</body>
+</html>
